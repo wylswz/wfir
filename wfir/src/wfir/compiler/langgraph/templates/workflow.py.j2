@@ -1,0 +1,55 @@
+from typing import TypedDict, Annotated, List, Dict, Union, Any
+from langgraph.graph import StateGraph, END
+from wfir.runtime.registry import Runtime
+from wfir.runtime.base import Context
+
+# Initialize Runtime
+# In a real app, Context might need to be initialized per request/execution
+runtime = Runtime()
+
+# --- State Definition ---
+class AgentState(TypedDict):
+    """
+    Global state for the workflow.
+    """
+    # Global variables defined in IR
+    {% for name, type in variables.items() %}
+    {{ name }}: {{ type }}
+    {% endfor %}
+    
+    # Internal: Node outputs storage
+    {% for node in nodes %}
+    {{ node.id | replace("-", "_") }}_output: Any
+    {% endfor %}
+
+# --- Node Definitions ---
+{% for node_code in node_definitions %}
+{{ node_code }}
+{% endfor %}
+
+# --- Graph Construction ---
+def build_graph():
+    workflow = StateGraph(AgentState)
+
+    # 1. Add Nodes
+    {% for node in nodes %}
+    workflow.add_node("{{ node.id }}", {{ node.id | replace("-", "_") }})
+    {% endfor %}
+
+    # 2. Add Edges
+    {% for edge_code in edge_definitions %}
+    {{ edge_code }}
+    {% endfor %}
+
+    # 3. Set Entry Point
+    # Assuming the first node in the list is the start, or we need explicit start
+    {% if start_node_id %}
+    workflow.set_entry_point("{{ start_node_id }}")
+    {% endif %}
+
+    return workflow
+
+if __name__ == "__main__":
+    app = build_graph().compile()
+    print("Graph compiled successfully.")
+    # print(app.get_graph().draw_ascii())

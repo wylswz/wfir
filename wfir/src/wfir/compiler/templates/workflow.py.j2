@@ -1,0 +1,38 @@
+from wfir.runtime.base import Context
+
+# --- Node Handlers ---
+{% for node in nodes %}
+def handler_{{ node.id | replace("-", "_") }}(inputs, context):
+    """Handler for {{ node.id }} ({{ node.type }})"""
+    print(f"Executing {{ node.id }} ({{ node.type }})")
+    # In a real compiler, we would generate specific code based on node.type
+    # or call a library function.
+    return {"output": f"Result of {{ node.id }}"}
+{% endfor %}
+
+# --- Workflow Execution ---
+def run_workflow(initial_vars=None):
+    ctx = Context(initial_vars)
+    
+    {% for node in nodes %}
+    # === Step: {{ node.id }} ===
+    inputs = {}
+    {% for name, input_val in node.inputs.items() %}
+    {% if input_val.value is not none %}
+    # Using repr to ensure strings are quoted and other types are valid python literals
+    inputs["{{ name }}"] = {{ input_val.value.__repr__() }} 
+    {% elif input_val.value_from %}
+    inputs["{{ name }}"] = ctx.get_node_output("{{ input_val.value_from.node_id }}", "{{ input_val.value_from.output_key or 'output' }}")
+    {% endif %}
+    {% endfor %}
+    
+    output = handler_{{ node.id | replace("-", "_") }}(inputs, ctx)
+    ctx.set_node_output("{{ node.id }}", output)
+    
+    {% endfor %}
+    
+    return ctx
+
+if __name__ == "__main__":
+    run_workflow()
+

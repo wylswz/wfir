@@ -1,0 +1,35 @@
+def {{ node_func_name }}(state: AgentState):
+    """
+    Node ID: {{ node.id }}
+    Type: {{ node.type }}
+    """
+    print(f"--- Executing {{ node.id }} ---")
+    
+    # Node Definition
+    node_def = {{ node.model_dump(by_alias=True)|tojson }}
+
+    # Resolve Inputs
+    inputs = {}
+    {% for name, input_val in node.inputs.items() %}
+    {% if input_val.value_from %}
+    # Reference: {{ input_val.value_from.node_id }}.{{ input_val.value_from.output_key }}
+    source_output = state.get("{{ input_val.value_from.node_id | replace("-", "_") }}_output")
+    if isinstance(source_output, dict):
+        inputs["{{ name }}"] = source_output.get("{{ input_val.value_from.output_key }}")
+    else:
+        inputs["{{ name }}"] = source_output
+    {% else %}
+    # Literal value
+    inputs["{{ name }}"] = {{ input_val.value|default("None")|tojson }}
+    {% endif %}
+    {% endfor %}
+    
+    # Execute Logic
+    try:
+        result = runtime.execute("{{ node.type }}", inputs, node_def)
+    except Exception as e:
+        print(f"Error executing node {{ node.id }}: {e}")
+        raise e
+    
+    # Return updates to state
+    return {"{{ node.id | replace("-", "_") }}_output": result}

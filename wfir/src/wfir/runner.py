@@ -24,19 +24,12 @@ class WorkflowRunner:
                 resolved[name] = input_val.value
             elif input_val.value_from:
                 ref_node_id = input_val.value_from.node_id
-                ref_key = input_val.value_from.output_key
                 
                 if ref_node_id not in self.node_outputs:
                     raise RuntimeError(f"Node '{node.id}' depends on '{ref_node_id}' which has not executed yet.")
                 
                 output = self.node_outputs[ref_node_id]
-                # Simple key lookup for now. In real impl, support dot notation or jsonpath
-                if isinstance(output, dict) and ref_key in output:
-                    resolved[name] = output[ref_key]
-                elif ref_key == "output": # Default fallback
-                     resolved[name] = output
-                else:
-                     resolved[name] = None # Or raise error
+                resolved[name] = output
         return resolved
 
     async def run(self, start_inputs: Dict[str, Any] = None):

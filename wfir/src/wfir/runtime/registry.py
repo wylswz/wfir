@@ -1,4 +1,4 @@
-from typing import Dict, Type, Any
+from typing import Dict, Type, Any, Optional
 from wfir.runtime.base import Context
 from wfir.runtime.nodes import NodeImplementation, StartNode, EndNode, LLMNode, HTTPNode, ToolNode, ConditionNode, LoopNode, NodeDef
 
@@ -35,14 +35,16 @@ class NodeRegistry:
         return schemas
 
 class Runtime:
-    def __init__(self, context: Context = None):
-        self.context = context or Context()
+    def __init__(self):
+        pass
 
-    def execute(self, node_type: str, inputs: Dict[str, Any], node_def: Dict[str, Any] = None) -> Any:
+    def execute(self, node_type: str, inputs: Dict[str, Any], context: Context, node_def: Dict[str, Any] = None) -> Any:
         node_impl = NodeRegistry.get(node_type)
         
         # Create NodeDef from dict
         raw_params = node_def.get("params", {}) if node_def else {}
+        # Validate params using the node's params_model
+        # Note: This might raise validation errors
         validated_params = node_impl.params_model(**raw_params)
         
         node_id = node_def.get("id") if node_def else "unknown"
@@ -52,4 +54,4 @@ class Runtime:
             node_id=node_id
         )
         
-        return node_impl.execute(inputs, self.context, node_def_obj)
+        return node_impl.execute(inputs, context, node_def_obj)

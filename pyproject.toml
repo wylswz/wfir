@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "grandalf>=0.8",
+    "langgraph>=1.0.3",
+    "wfir",
 ]
 
 [tool.uv.workspace]
@@ -15,3 +17,6 @@ members = [
     "wfir",
     "playground",
 ]
+
+[tool.uv.sources]
+wfir = { workspace = true }

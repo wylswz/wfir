@@ -127,8 +127,9 @@ function FlowEditor({
   setNodes,
   menu,
   setMenu,
-  onNodeClick
-}: FlowEditorProps) {
+  onNodeClick,
+  availableNodeTypes
+}: FlowEditorProps & { availableNodeTypes: string[] }) {
   const { screenToFlowPosition } = useReactFlow();
 
   const onPaneContextMenu = useCallback(
@@ -199,6 +200,7 @@ function FlowEditor({
           {...menu}
           onAddNode={handleAddNode}
           onClose={() => setMenu(null)}
+          availableNodeTypes={availableNodeTypes}
         />
       )}
     </>
@@ -223,22 +225,24 @@ function App() {
 
   // Drawer State
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedNodeData, setSelectedNodeData] = useState<unknown>(null);
-  const [nodeSchemas, setNodeSchemas] = useState<Record<string, any>>({});
+  const [selectedNodeData, setSelectedNodeData] = useState<{ id: string; type: string; inputs?: any; params?: any; outputs?: any } | null>(null);
+  const [nodeSchemas, setNodeSchemas] = useState<Record<string, object>>({});
+
+  useEffect(() => {
+    // Load node schemas initially
+    getNodeTypes().then(schemas => setNodeSchemas(schemas)).catch(console.error);
+  }, []);
 
   const loadWorkflows = useCallback(async () => {
     try {
-      const [workflowsData, schemasData] = await Promise.all([
-        getWorkflows(),
-        getNodeTypes()
-      ]);
+      // Only load workflows here
+      const workflowsData = await getWorkflows();
       setWorkflows(workflowsData);
-      setNodeSchemas(schemasData);
       if (workflowsData.length > 0 && !selectedId) {
         setSelectedId(workflowsData[0].id);
       }
     } catch (error) {
-      console.error('Failed to load workflows or schemas', error);
+      console.error('Failed to load workflows', error);
     }
   }, [selectedId]);
 
@@ -280,7 +284,10 @@ function App() {
   const onNodeClick = useCallback((_event: React.MouseEvent, node: FlowNode) => {
     setSelectedNodeData({
       id: node.id,
-      ...node.data
+      type: (node.data.type as string) || 'default',
+      inputs: node.data.inputs,
+      params: node.data.params,
+      outputs: node.data.outputs,
     });
     setDrawerOpen(true);
   }, []);
@@ -321,9 +328,10 @@ function App() {
     if (!selectedId || !currentWfir) return;
     setLoading(true);
     try {
-      // Auto save before run?
+      // Auto-save before run to ensure latest changes are used
       const updatedWfir = flowToWfir(nodes, edges, currentWfir);
       await updateWorkflow(selectedId, updatedWfir);
+      setCurrentWfir(updatedWfir);
       
       const result = await runWorkflow(selectedId, {});
       setOutput(JSON.stringify(result, null, 2));
@@ -337,8 +345,13 @@ function App() {
   };
 
   const handleTranspile = async () => {
-    if (!selectedId) return;
+    if (!selectedId || !currentWfir) return;
     try {
+      // Auto-save before transpilation to ensure latest changes are used
+      const updatedWfir = flowToWfir(nodes, edges, currentWfir);
+      await updateWorkflow(selectedId, updatedWfir);
+      setCurrentWfir(updatedWfir);
+
       const result = await transpileWorkflow(selectedId);
       setTranspiledCode(result.code);
       setViewMode('code');
@@ -455,6 +468,7 @@ function App() {
                       menu={menu}
                       setMenu={setMenu}
                       onNodeClick={onNodeClick}
+                      availableNodeTypes={Object.keys(nodeSchemas)}
                     />
                   </ReactFlowProvider>
                 </div>

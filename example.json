@@ -1,0 +1,90 @@
+{
+    "name": "New Workflow",
+    "nodes": [
+      {
+        "id": "start",
+        "type": "StartNode",
+        "metadata": {
+          "position": {
+            "x": 100,
+            "y": 100
+          }
+        }
+      },
+      {
+        "id": "end",
+        "type": "EndNode",
+        "metadata": {
+          "position": {
+            "x": 137,
+            "y": 364
+          }
+        }
+      },
+      {
+        "id": "llm-1763542362909",
+        "type": "LLM",
+        "inputs": {
+          "prompt": {
+            "value": "hello"
+          }
+        },
+        "params": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "temperature": 0.7,
+          "system_prompt": ""
+        },
+        "outputs": {
+          "output": "Any"
+        },
+        "metadata": {
+          "position": {
+            "x": 219.50086212158203,
+            "y": 166.23263549804688
+          }
+        }
+      },
+      {
+        "id": "llm-1763542969691",
+        "type": "LLM",
+        "inputs": {
+          "prompt": {
+            "valueFrom": {
+              "nodeId": "llm-1763542362909"
+            }
+          }
+        },
+        "params": {
+          "provider": "openai",
+          "model": "gpt-4o",
+          "temperature": 0.7,
+          "system_prompt": ""
+        },
+        "outputs": {
+          "output": "Any"
+        },
+        "metadata": {
+          "position": {
+            "x": 193.25129318237305,
+            "y": 274.2326354980469
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "start",
+        "target": "llm-1763542362909"
+      },
+      {
+        "source": "llm-1763542362909",
+        "target": "llm-1763542969691"
+      },
+      {
+        "source": "llm-1763542969691",
+        "target": "end"
+      }
+    ],
+    "id": "1219198d-0804-4a4f-a9c0-b43d4b7f35f7"
+  }

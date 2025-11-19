@@ -6,30 +6,25 @@ def {{ node_func_name }}(state: AgentState):
     print(f"--- Executing {{ node.id }} ---")
     
     # Node Definition
-    node_def = {{ node.model_dump(by_alias=True)|tojson }}
+    node_def = json.loads("""{{ node.model_dump_json(by_alias=True, indent=2) }}""")
+
+    # Initialize Context
+    context = Context(state)
 
     # Resolve Inputs
-    inputs = {}
-    {% for name, input_val in node.inputs.items() %}
-    {% if input_val.value_from %}
-    # Reference: {{ input_val.value_from.node_id }}.{{ input_val.value_from.output_key }}
-    source_output = state.get("{{ input_val.value_from.node_id | replace("-", "_") }}_output")
-    if isinstance(source_output, dict):
-        inputs["{{ name }}"] = source_output.get("{{ input_val.value_from.output_key }}")
-    else:
-        inputs["{{ name }}"] = source_output
-    {% else %}
-    # Literal value
-    inputs["{{ name }}"] = {{ input_val.value|default("None")|tojson }}
-    {% endif %}
-    {% endfor %}
+    inputs = context.resolve_inputs(node_def.get("inputs", {}))
     
     # Execute Logic
     try:
-        result = runtime.execute("{{ node.type }}", inputs, node_def)
+        # Pass context to execute
+        result = runtime.execute("{{ node.type }}", inputs, context, node_def)
     except Exception as e:
         print(f"Error executing node {{ node.id }}: {e}")
         raise e
     
+    # Set Output in Context
+    context.set_node_output("{{ node.id }}", result)
+
     # Return updates to state
+    # We explicitly return the output update to satisfy LangGraph contract
     return {"{{ node.id | replace("-", "_") }}_output": result}

@@ -6,12 +6,22 @@ from pydantic import BaseModel, Field, model_validator
 class ValueFrom(BaseModel):
     """Reference to an output from another node."""
     node_id: str = Field(..., alias="nodeId")
-    output_key: Optional[str] = Field(default="output", alias="outputKey")
 
 class InputValue(BaseModel):
     """Represents an input value which can be static or a reference."""
     value: Optional[Any] = None
     value_from: Optional[ValueFrom] = Field(None, alias="valueFrom")
+
+    @model_validator(mode='before')
+    @classmethod
+    def parse_input(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "value" in data or "valueFrom" in data:
+                return data
+            # Treat as a dictionary value
+            return {"value": data}
+        # Treat as a scalar value
+        return {"value": data}
 
     @model_validator(mode='after')
     def check_value_or_ref(self):
@@ -77,4 +87,3 @@ class WorkflowIR(BaseModel):
             if edge.target not in node_ids:
                 raise ValueError(f"Edge target '{edge.target}' does not exist in nodes.")
         return self
-

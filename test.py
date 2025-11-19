@@ -1,3 +1,4 @@
+import json
 from typing import TypedDict, Annotated, List, Dict, Union, Any
 from langgraph.graph import StateGraph, END
 from wfir.runtime.registry import Runtime
@@ -21,7 +22,9 @@ class AgentState(TypedDict):
     
     end_output: Any
     
-    llm_1763533365295_output: Any
+    llm_1763542362909_output: Any
+    
+    llm_1763542969691_output: Any
     
 
 # --- Node Definitions ---
@@ -34,23 +37,42 @@ def start(state: AgentState):
     print(f"--- Executing start ---")
     
     # Node Definition
-    node_def = {"id": "start", "inputs": {}, "metadata": {"position": {"x": -32, "y": 39.5}}, "outputs": {"output": "String"}, "params": {}, "stream": false, "type": "StartNode"}
+    node_def = json.loads("""{
+  "id": "start",
+  "type": "StartNode",
+  "inputs": {},
+  "outputs": {
+    "output": "Any"
+  },
+  "params": {},
+  "stream": false,
+  "metadata": {
+    "position": {
+      "x": 100,
+      "y": 100
+    }
+  }
+}""")
+
+    # Initialize Context
+    context = Context(state)
 
     # Resolve Inputs
-    inputs = {}
+    inputs = context.resolve_inputs(node_def.get("inputs", {}))
     
-    
-    # Add params to inputs (merged)
-    
-
     # Execute Logic
     try:
-        result = runtime.execute("StartNode", inputs, node_def)
+        # Pass context to execute
+        result = runtime.execute("StartNode", inputs, context, node_def)
     except Exception as e:
         print(f"Error executing node start: {e}")
         raise e
     
+    # Set Output in Context
+    context.set_node_output("start", result)
+
     # Return updates to state
+    # We explicitly return the output update to satisfy LangGraph contract
     return {"start_output": result}
 
 def end(state: AgentState):
@@ -61,71 +83,157 @@ def end(state: AgentState):
     print(f"--- Executing end ---")
     
     # Node Definition
-    node_def = {"id": "end", "inputs": {"value": {"value": null, "valueFrom": {"nodeId": "start", "outputKey": "output"}}}, "metadata": {"position": {"x": 73.5, "y": 244.5}}, "outputs": {"output": "Any"}, "params": {}, "stream": false, "type": "EndNode"}
+    node_def = json.loads("""{
+  "id": "end",
+  "type": "EndNode",
+  "inputs": {},
+  "outputs": {
+    "output": "Any"
+  },
+  "params": {},
+  "stream": false,
+  "metadata": {
+    "position": {
+      "x": 137,
+      "y": 364
+    }
+  }
+}""")
+
+    # Initialize Context
+    context = Context(state)
 
     # Resolve Inputs
-    inputs = {}
+    inputs = context.resolve_inputs(node_def.get("inputs", {}))
     
-    
-    # Reference: start.output
-    source_output = state.get("start_output")
-    if isinstance(source_output, dict):
-        inputs["value"] = source_output.get("output")
-    else:
-        inputs["value"] = source_output
-    
-    
-    
-    # Add params to inputs (merged)
-    
-
     # Execute Logic
     try:
-        result = runtime.execute("EndNode", inputs, node_def)
+        # Pass context to execute
+        result = runtime.execute("EndNode", inputs, context, node_def)
     except Exception as e:
         print(f"Error executing node end: {e}")
         raise e
     
+    # Set Output in Context
+    context.set_node_output("end", result)
+
     # Return updates to state
+    # We explicitly return the output update to satisfy LangGraph contract
     return {"end_output": result}
 
-def llm_1763533365295(state: AgentState):
+def llm_1763542362909(state: AgentState):
     """
-    Node ID: llm-1763533365295
+    Node ID: llm-1763542362909
     Type: LLM
     """
-    print(f"--- Executing llm-1763533365295 ---")
+    print(f"--- Executing llm-1763542362909 ---")
     
     # Node Definition
-    node_def = {"id": "llm-1763533365295", "inputs": {"prompt": {"value": "Hello world", "valueFrom": null}}, "metadata": {"position": {"x": 51, "y": 119}}, "outputs": {"output": "Any"}, "params": {"model": "gpt-4-turbo", "system_prompt": null, "temperature": 1}, "stream": false, "type": "LLM"}
+    node_def = json.loads("""{
+  "id": "llm-1763542362909",
+  "type": "LLM",
+  "inputs": {
+    "prompt": {
+      "value": "hello",
+      "valueFrom": null
+    }
+  },
+  "outputs": {
+    "output": "Any"
+  },
+  "params": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "temperature": 0.7,
+    "system_prompt": ""
+  },
+  "stream": false,
+  "metadata": {
+    "position": {
+      "x": 219.50086212158203,
+      "y": 166.23263549804688
+    }
+  }
+}""")
+
+    # Initialize Context
+    context = Context(state)
 
     # Resolve Inputs
-    inputs = {}
+    inputs = context.resolve_inputs(node_def.get("inputs", {}))
     
-    
-    # Literal value
-    inputs["prompt"] = "Hello world"
-    
-    
-    
-    # Add params to inputs (merged)
-    
-    inputs["model"] = "gpt-4-turbo"
-    
-    inputs["temperature"] = 1
-    
-    inputs["system_prompt"] = null
-    
-
     # Execute Logic
     try:
-        result = runtime.execute("LLM", inputs, node_def)
+        # Pass context to execute
+        result = runtime.execute("LLM", inputs, context, node_def)
     except Exception as e:
-        print(f"Error executing node llm-1763533365295: {e}")
+        print(f"Error executing node llm-1763542362909: {e}")
         raise e
     
+    # Set Output in Context
+    context.set_node_output("llm-1763542362909", result)
+
     # Return updates to state
-    return {"llm_1763533365295_output": result}
+    # We explicitly return the output update to satisfy LangGraph contract
+    return {"llm_1763542362909_output": result}
+
+def llm_1763542969691(state: AgentState):
+    """
+    Node ID: llm-1763542969691
+    Type: LLM
+    """
+    print(f"--- Executing llm-1763542969691 ---")
+    
+    # Node Definition
+    node_def = json.loads("""{
+  "id": "llm-1763542969691",
+  "type": "LLM",
+  "inputs": {
+    "prompt": {
+      "value": null,
+      "valueFrom": {
+        "nodeId": "llm-1763542362909"
+      }
+    }
+  },
+  "outputs": {
+    "output": "Any"
+  },
+  "params": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "temperature": 0.7,
+    "system_prompt": ""
+  },
+  "stream": false,
+  "metadata": {
+    "position": {
+      "x": 193.25129318237305,
+      "y": 274.2326354980469
+    }
+  }
+}""")
+
+    # Initialize Context
+    context = Context(state)
+
+    # Resolve Inputs
+    inputs = context.resolve_inputs(node_def.get("inputs", {}))
+    
+    # Execute Logic
+    try:
+        # Pass context to execute
+        result = runtime.execute("LLM", inputs, context, node_def)
+    except Exception as e:
+        print(f"Error executing node llm-1763542969691: {e}")
+        raise e
+    
+    # Set Output in Context
+    context.set_node_output("llm-1763542969691", result)
+
+    # Return updates to state
+    # We explicitly return the output update to satisfy LangGraph contract
+    return {"llm_1763542969691_output": result}
 
 
 # --- Graph Construction ---
@@ -138,14 +246,18 @@ def build_graph():
     
     workflow.add_node("end", end)
     
-    workflow.add_node("llm-1763533365295", llm_1763533365295)
+    workflow.add_node("llm-1763542362909", llm_1763542362909)
+    
+    workflow.add_node("llm-1763542969691", llm_1763542969691)
     
 
     # 2. Add Edges
     
-    workflow.add_edge("start", "llm-1763533365295")
+    workflow.add_edge("start", "llm-1763542362909")
     
-    workflow.add_edge("llm-1763533365295", "end")
+    workflow.add_edge("llm-1763542362909", "llm-1763542969691")
+    
+    workflow.add_edge("llm-1763542969691", "end")
     
 
     # 3. Set Entry Point
@@ -157,7 +269,9 @@ def build_graph():
     return workflow
 
 if __name__ == "__main__":
-    app = build_graph().compile()
+    config = {"configurable": {"thread_id": "1"}}
+    from langgraph.checkpoint.memory import MemorySaver
+    app = build_graph().compile(checkpointer=MemorySaver())
     print("Graph compiled successfully.")
-    print(app.get_graph().draw_ascii())
-    app.invoke({"start": "Hello world"})
+    app.invoke({}, config)
+    print(app.get_state(config))

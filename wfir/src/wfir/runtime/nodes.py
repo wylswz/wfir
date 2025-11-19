@@ -28,19 +28,43 @@ class EndNode(NodeImplementation[EmptyParams]):
         return inputs
 
 class LLMParams(BaseModel):
+    provider: str = Field("openai", description="The model provider (e.g. openai, mock)")
     model: str = Field("gpt-3.5-turbo", description="The LLM model to use")
     temperature: float = Field(0.7, description="Sampling temperature", ge=0.0, le=2.0)
-    system_prompt: Optional[str] = Field(None, description="System prompt")
+    system_prompt: str = Field("", description="System prompt")
 
 class LLMNode(NodeImplementation[LLMParams]):
     params_model = LLMParams
 
     def execute(self, inputs: Dict[str, Any], context: Context, node_def: NodeDef[LLMParams]) -> Any:
         prompt = inputs.get("prompt")
+        if prompt is None:
+            # Try to find 'input' if prompt is not explicit, as a fallback convention? 
+            # Or just return error/empty. 
+            # Based on existing code: prompt = inputs.get("prompt")
+            return "Error: 'prompt' input missing"
+
         params = node_def.params
-        model = params.model
-        # Mock LLM call
-        return f"LLM Response to '{prompt}' using {model}"
+        
+        from wfir.runtime.llm import ModelFactory
+        from langchain_core.messages import HumanMessage, SystemMessage
+        
+        try:
+            model = ModelFactory.create(
+                provider=params.provider,
+                model=params.model,
+                temperature=params.temperature
+            )
+            
+            messages = []
+            if params.system_prompt:
+                messages.append(SystemMessage(content=params.system_prompt))
+            messages.append(HumanMessage(content=str(prompt)))
+            
+            response = model.invoke(messages)
+            return response.content
+        except Exception as e:
+            return f"Error executing LLMNode: {str(e)}"
 
 class HTTPParams(BaseModel):
     url: str = Field(..., description="Target URL")

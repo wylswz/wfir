@@ -8,6 +8,7 @@ class LangGraphTranspiler(IRVisitor):
     def __init__(self):
         template_dir = os.path.join(os.path.dirname(__file__), "templates")
         self.env = Environment(loader=FileSystemLoader(template_dir))
+        self.env.filters["repr"] = repr
         
         self.node_definitions: List[str] = []
         self.edge_definitions: List[str] = []

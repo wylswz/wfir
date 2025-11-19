@@ -49,3 +49,5 @@ flowchart TD
     StateGraph -->|Compiles to| Runner
     Runner -->|Executes| NodeImpl
 ```
+
+![](./screenshots/image.png)
